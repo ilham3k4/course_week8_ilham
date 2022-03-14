@@ -233,3 +233,42 @@ This will allow you to take a look.
 docker search python # see all the various flavors of Python containers you can run
 docker search node # see all the various flavors of Node.js containers you can run
 ```
+
+# The Dockerfile
+A big key with Docker container is that they're supposed to be disposable. You should be able to create them and throw them away as many times as necessary. In other words: adopt a mindset of making everything short-lived. There are other, better tools for long-running, custom containers.
+  
+```
+FROM node:12-stretch
+
+CMD ["node", "-e", "console.log(\"hi lol\")"]
+```
+  
+The first thing on each line (`FROM` and `CMD` in this case) are called instructions.
+  
+### A Note on EXPOSE
+There is an instruction called `EXPOSE <port number>` that its intended use is to expose ports from within the container to the host machine. However if we don't do the `-p 3000:3000` it still isn't exposed so in reality this instruction doesn't do much. You don't need `EXPOSE`.
+  
+# Features in Docker
+### Bind Mounts
+Bind mounts allow you to mount files from your host computer into your container. This allows you to use the containers a much more flexible way than previously possible: you don't have to know what files the container will have when you build it and it allows you to determine those files when you run it.
+  
+```
+# from the root directory of your CRA app
+docker run --mount type=bind,source="$(pwd)"/build,target=/usr/share/nginx/html -p 8080:80 nginx
+```
+This is how you do bind mounts. It's a bit verbose but necessary. 
+- We use the `--mount` flag to identify we're going to be mounting something in from the host.
+- As far as I know the only two types are `bind` and `volume`. Here we're using bind because we to mount in some piece of already existing data from the host.
+- In the source, we identify what part of the host we want to make readable-and-writable to the container. It has to be an absolute path (e.g we can't say `"./build"`) which is why use the `"$(pwd)"` to get the present working directory to make it an absolute path.
+- The target is where we want those files to be mounted in the container. Here we're putting it in the spot that NGINX is expecting.
+- As a side note, you can mount as many mounts as you care to, and you mix bind and volume mounts. NGINX has a default config that we're using but if we used another bind mount to mount an NGINX config to `/etc/nginx/nginx.conf` it would use that instead.
+  
+### Volumes
+Volumes works so your containers can maintain state between runs. Volumes can not only be shared by the same container-type between runs but also between different containers.
+  
+### named pipes, tmpfs, and wrap up
+`tmpfs`
+ > `tmpfs` imitates a file system but actually keeps everything in memory. This is useful for mounting in secrets like database keys.
+
+`npipe`
+> `npipe` useful for mounting third party tools for Windows containers.
